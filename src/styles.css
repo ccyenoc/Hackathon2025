@@ -1,0 +1,160 @@
+html, body {
+    height: 100%;               /* Ensure the body and HTML take up the full height of the viewport */
+    margin: 0;                  /* Remove default margin */
+    padding: 0;                 /* Remove default padding */
+}
+
+body {
+    background-size: cover;                  /* Cover the entire page */
+    background-position: center;             /* Center the background */
+    background-repeat: no-repeat;            /* Prevent the background from repeating */
+    color: white;                           /* Text color */
+    font-family: Arial, sans-serif;          /* Font */
+}
+
+.content {
+    text-align: center;                    /* Center the text */
+    padding: 20px;                          /* Add some padding around the content */
+}
+
+h1 {
+    margin-top: 20px;                      /* Add margin for better spacing */
+}
+
+.HeaderBackground{
+    width: 100%;        /* width of the rectangle */
+    height: 90px;       /* height of the rectangle */
+    background-color: #00b14f;
+}
+
+.HeaderBackground img {
+    max-width: 100%;  /* Make sure the image is responsive */
+    height: auto;     /* Maintain aspect ratio */
+}
+
+nav {
+    background-color: #00b14f; /* Background color of the navbar */
+    width: 100%; /* Full width of the page */
+    padding: 10px 0; /* Some padding to space out the menu */
+}
+
+.menu {
+    list-style-type: none; /* Remove default list styling */
+    margin: 0; /* Remove margin */
+    padding: 0; /* Remove padding */
+    display: flex; /* Use flexbox to arrange items horizontally */
+    justify-content: space-around; /* Distribute the items evenly */
+    width: 100%; /* Full width of the parent */
+}
+
+.menu li {
+    flex: 1; /* Each <li> takes equal width */
+    text-align: center; /* Center the text inside each item */
+}
+
+.menu li a {
+    color: white; /* Text color */
+    text-decoration: none; /* Remove underline */
+    padding: 14px 20px; /* Add padding around each menu item */
+    display: block; /* Make the link fill the <li> */
+}
+
+/* Hover effect for menu items */
+.menu li a:hover {
+    background-color: #00a64a; /* Background color on hover */
+    color: #fff;  /* Text color on hover */
+}
+
+.disabled-menu {
+    pointer-events: none; /* Prevent interaction */
+    opacity: 0.5; /* Make the menu appear disabled */
+}
+
+/* Chatbox styles */
+.chatbox {
+    background-color: #fff;
+    width: 100%;
+    height: 500px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    overflow: hidden;
+}
+
+.messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.message {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    max-width: 80%;
+}
+
+.received {
+    background-color: #e0e0e0;
+    align-self: flex-start;
+}
+
+.sent {
+    background-color: #00b14f;
+    color: white;
+    align-self: flex-end;
+}
+
+.typing {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    font-size: 16px;
+}
+
+/* Fixing the typing animation */
+.typing-indicator::before {
+    content: "...";
+    font-style: italic;
+    color: #888;
+    display: inline-block;
+    width: 0;
+    animation: typing 1.5s steps(4) infinite;
+}
+
+.input-area {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 15px;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+button {
+    width: 20%;
+    background-color: #00b14f;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #009f44;
+}
+
+/* Typing animation */
+@keyframes typing {
+    0% { width: 0; }
+    33% { width: 0.2em; }
+    66% { width: 0.4em; }
+    100% { width: 0.6em; }
+}

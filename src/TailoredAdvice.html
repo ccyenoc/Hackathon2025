@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Insert PNG Example</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="HeaderBackground">
+  <img src="../src/pic/Header.png" alt="Header">
+</div>
+
+<div class="menuRec"></div>
+
+<header>
+  <nav>
+    <ul class="menu">
+      <li><a href="General.html">General</a></li>
+      <li><a href="FAQ.html">FAQ</a></li>
+      <li><a href="BusinessInsight.html">BusinessInsight</a></li>
+      <li><a href = "TailoredAdvice.html" class = "disabled-menu">Tailored Advice</a></li>
+    </ul>
+  </nav>
+</header>
+
+<div class="chatbox">
+  <div class="messages">
+    <div class="message typing">
+      <span class="typing-indicator"></span> <!-- No need for static dots here -->
+    </div>
+  </div>
+  <div class="input-area">
+    <input type="text" placeholder="Type a message..." id="userMessage">
+    <button onclick="sendMessage()">Send</button>
+  </div>
+</div>
+
+<script src="Chat.js"></script> <!-- Link to your JS file -->
+</body>
+</html>
