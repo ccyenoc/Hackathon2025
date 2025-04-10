@@ -25,10 +25,23 @@
     </nav>
 </header>
 
+<script>
+    const defaultMessage = "Hi there! I'm GrabBot, your Grab merchant assistant.<br>" +
+        "In <i>General</i>, you can ask any question.<br>" +
+        "In <i>FAQ (Frequently Ask Question)</i>, you can get common questions asked by merchants.<br>" +
+        "In <i>Business Insight</i>, you can monitor your sales trends, opportunities, and also monitor your inventory.<br>" +
+        "In <i>Tailored Advice</i>, you can get personalized advice to boost your sales and also make your business bigger.<br>";
+
+    window.onload = function() {
+        sendMessage(defaultMessage, true);  // true = auto
+    };
+</script>
+
+
 <div class="chatbox">
     <div class="messages">
         <div class="message typing">
-            <span class="typing-indicator"></span> <!-- No need for static dots here -->
+            <span class="typing-indicator"></span> <!-- Typing animation -->
         </div>
     </div>
     <div class="input-area">
@@ -37,8 +50,6 @@
     </div>
 </div>
 
-<script src="Chat.js"></script> <!-- Link to your JS file -->
-
-
+<script src="Chat.js"></script> <!-- Link to your JavaScript file -->
 </body>
 </html>

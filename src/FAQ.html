@@ -25,6 +25,19 @@
     </nav>
 </header>
 
+<script>
+    const defaultMessage = "Hi there! I'm GrabBot, your Grab merchant assistant.<br>" +
+        "May scroll through the question down below to get answer for Frequently Asked Question.<br>" +
+        "Feel free to drop me a question  if your enquires is not in the list below.<br>" +
+        "If you need a live agent to assist you, may click the “Live Agent” button down below.<br>";
+
+    window.onload = function() {
+        sendMessage(defaultMessage, true);
+        generateFAQButtons();  // Trigger button generation
+    };
+
+</script>
+
 <div class="chatbox">
     <div class="messages">
         <div class="message typing">

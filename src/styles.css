@@ -95,6 +95,28 @@ nav {
     opacity: 0.5; /* Make the menu appear disabled */
 }
 
+.btnContainer{
+    display: flex; /* Enable flexbox */
+    flex-direction: column; /* Stack the buttons vertically */
+    gap: 10px; /* Add space between buttons */
+}
+
+.btn {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    background-color: #4CAF50;
+    color: white;
+    transition: background-color 0.3s;
+}
+
+/* Button hover effect */
+.btn:hover {
+    background-color: #45a049;
+}
+
 /* Chatbox styles */
 .chatbox {
     background-color: #fff;
