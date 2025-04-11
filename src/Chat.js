@@ -40,7 +40,7 @@ async function sendMessage(message, merchantId = '2a1c4', isAuto = false) {
     document.querySelector('.messages').appendChild(typingMessage);
 
     try {
-        const response = await fetch('http://localhost:5001/api/query', {
+        const response = await fetch('http://127.0.0.1:5001/api/query', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

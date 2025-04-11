@@ -6,12 +6,23 @@ import pandas as pd
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
+merchant_url = 'https://drive.google.com/uc?id=1i1Vq0_FiGnGjxWe8wwwgHHNE8DNnkNR9'
+items_url = 'https://drive.google.com/uc?id=1H1e1DgYXJ1cu5xJ7yGsrd3rnUZ9yy_ZB'
+transaction_data_url = 'https://drive.google.com/uc?id=1MjNDpjkMoefpLcV3RffJSTmHKITFt5l0'
+transaction_items_url = 'https://drive.google.com/uc?id=1S_z_qajdSZ3NCklOXAmy8tqziDsPkvmN'
 
-# Load your data (consider better data storage for production)
-merchant_df = pd.read_csv('src/csv/merchant.csv')
-items_df = pd.read_csv('src/csv/items.csv')
-transaction_df = pd.read_csv('src/csv/transaction_data.csv')  # Changed variable name to match what SmartMerchantAssistant expects
-transaction_item_df = pd.read_csv('src/csv/transaction_items.csv')
+# Download files only if they don't exist locally
+gdown.download(merchant_url, 'merchant.csv', quiet=False)
+gdown.download(items_url, 'items.csv', quiet=False)
+gdown.download(transaction_data_url, 'transaction_data.csv', quiet=False)
+gdown.download(transaction_items_url, 'transaction_items.csv', quiet=False)
+
+# Load the data
+merchant_df = pd.read_csv('merchant.csv')
+items_df = pd.read_csv('items.csv')
+transaction_df = pd.read_csv('transaction_data.csv')
+transaction_item_df = pd.read_csv('transaction_items.csv')
+
 
 # Basic statistics for numerical columns
 for df_name, df in [('merchant_df', merchant_df), ('items_df', items_df),
@@ -102,25 +113,6 @@ def handle_query():
         return jsonify({"error": str(e)}), 500
 
     ...
-# Define Google Drive file URLs or IDs
-merchant_url = 'https://drive.google.com/uc?id=YOUR_MERCHANT_FILE_ID'
-items_url = 'https://drive.google.com/uc?id=YOUR_ITEMS_FILE_ID'
-transaction_data_url = 'https://drive.google.com/uc?id=YOUR_TRANSACTION_DATA_FILE_ID'
-transaction_items_url = 'https://drive.google.com/uc?id=YOUR_TRANSACTION_ITEMS_FILE_ID'
-
-# Download files only if they don't exist locally
-gdown.download(merchant_url, 'merchant.csv', quiet=False)
-gdown.download(items_url, 'items.csv', quiet=False)
-gdown.download(transaction_data_url, 'transaction_data.csv', quiet=False)
-gdown.download(transaction_items_url, 'transaction_items.csv', quiet=False)
-
-# Load the data
-merchant_df = pd.read_csv('merchant.csv')
-items_df = pd.read_csv('items.csv')
-transaction_data_df = pd.read_csv('transaction_data.csv')
-transaction_item_df = pd.read_csv('transaction_items.csv')
-
-
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

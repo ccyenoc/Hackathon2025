@@ -247,3 +247,11 @@ button.btn:hover {
     font-size: 20px;
     color: white;
 }
+.grab-logo {
+    width: 150px;
+    height: auto;
+    position: absolute;
+    left: 50%;
+    top: 200px; /* Distance from the top */
+    transform: translateX(-50%); /* Center horizontally */
+}
