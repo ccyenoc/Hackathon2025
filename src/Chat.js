@@ -1,25 +1,94 @@
-window.onload = function() {
-    setTimeout(function() {
-        var typingMessage = document.querySelector('.typing');
-        typingMessage.innerHTML = `<span class="message-text">${defaultMessage}</span>`;
-        typingMessage.classList.remove('typing');
-        typingMessage.classList.add('received');
 
-        document.querySelector('.messages').scrollTop = document.querySelector('.messages').scrollHeight;
-        if (window.location.pathname.includes('FAQ.html')) {
-            generateFAQButtons();
-            console.log("This is the FAQ page.");
-        }
+window.onload = function () {
+            setTimeout(function () {
+                var typingMessage = document.querySelector('.typing');
+                if (typingMessage) {
+                    typingMessage.innerHTML = `<span class="message-text">${defaultMessage}</span>`; // Ensure `defaultMessage` is defined
+                    typingMessage.classList.remove('typing');
+                    typingMessage.classList.add('received');
 
-    }, 2000);
+                    // Scroll the messages container to the bottom
+                    const messagesContainer = document.querySelector('.messages');
+                    if (messagesContainer) {
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    }
+
+                    // Check if we are on the FAQ page
+                    if (window.location.pathname.includes('FAQ.html')) {
+                        generateFAQButtons(); // Make sure this function is defined
+                        console.log("This is the FAQ page.");
+                    }
+                }
+            }, 2000);
 
 };
 
-async function sendMessage(message, merchantId = '2a1c4', isAuto = false) {
+function confirmLogin() {
+    const merchantInput = document.getElementById("merchant-id");
+    const inputMerchantId = merchantInput ? merchantInput.value.trim() : '';
+    console.log("Input Merchant ID:", inputMerchantId);
+
+    if (inputMerchantId) {
+        localStorage.setItem('merchantID', inputMerchantId);
+
+        // Send the merchant ID to the backend
+        sendMerchantIdToBackend(inputMerchantId);
+
+        // Send a message confirming the login, and pass inputMerchantId
+        sendMessage("Confirming your login...", inputMerchantId, true);
+
+        // Redirect after 2 seconds (or adjust timing as needed)
+        setTimeout(function () {
+            window.location.href = 'General.html';
+        }, 2000);
+    } else {
+        console.log("Merchant ID is empty!");
+    }
+}
+// Function to send merchant ID to the Python backend
+function sendMerchantIdToBackend(merchantId) {
+    fetch('http://127.0.0.1:5001/api/save_merchant_id', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            merchant_id: merchantId ,
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Merchant ID saved:', data);
+        })
+        .catch(error => {
+            console.error('Error saving merchant ID:', error);
+        });
+}
+
+async function sendMessage(message, merchantId = null, isAuto = false) {
     const userInput = document.getElementById('userMessage');
     const userMessage = message || userInput.value;
 
     if (userMessage.trim() === "") return;
+
+    // If merchantId is not provided, try to get it from localStorage
+    if (!merchantId) {
+        merchantId = localStorage.getItem('merchantID');
+        console.log("Retrieved merchantId from localStorage:", merchantId);
+    }
+
+    // If still no merchantId, log error and return
+    if (!merchantId) {
+        console.error("No merchant ID available. Please log in first.");
+        // Show error to user
+        const errorMessage = document.createElement('div');
+        errorMessage.classList.add('message', 'received', 'error');
+        errorMessage.innerHTML = `Error: Please log in first to establish your merchant ID.`;
+        document.querySelector('.messages').appendChild(errorMessage);
+        return;
+    }
+
+    // Rest of your function remains the same...
 
     // Display the user's message in the chat
     if (!isAuto) {
@@ -30,7 +99,6 @@ async function sendMessage(message, merchantId = '2a1c4', isAuto = false) {
         userInput.value = "";
     }
 
-    // Scroll to bottom
     document.querySelector('.messages').scrollTop = document.querySelector('.messages').scrollHeight;
 
     // Show typing indicator
@@ -40,12 +108,16 @@ async function sendMessage(message, merchantId = '2a1c4', isAuto = false) {
     document.querySelector('.messages').appendChild(typingMessage);
 
     try {
+        console.log("merchantId:", merchantId);
+        console.log("userMessage:", userMessage);
         const response = await fetch('http://127.0.0.1:5001/api/query', {
             method: 'POST',
+
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
+
                 merchant_id: merchantId,
                 query: userMessage,
             }),
@@ -76,9 +148,9 @@ async function sendMessage(message, merchantId = '2a1c4', isAuto = false) {
         document.querySelector('.messages').appendChild(errorMessage);
         document.querySelector('.messages').scrollTop = document.querySelector('.messages').scrollHeight;
     }
+
+
 }
-
-
 /* FAQ page */
 // Function to generate FAQ buttons
 function generateFAQButtons() {

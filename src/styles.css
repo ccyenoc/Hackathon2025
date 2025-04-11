@@ -231,27 +231,104 @@ button.btn:hover {
     left: 50%;
     top: 25%;
     transform: translate(-50%, -50%);
+    text-align: center; /* Center everything inside */
+    display: flex;
+    flex-direction: column; /* Stack the logo and text vertically */
+    justify-content: center; /* Center content vertically */
+    align-items: center; /* Center content horizontally */
 }
 
-/* Fix class name & center the MainLogo */
 .MainLogo {
-    position: absolute;
-    top: 60%;
-    left: 50%;
-    transform: translateX(-50%);
-    text-align: center;
+    position: relative; /* Relative to .white-rectangle */
 }
 
 .logo_Merchant {
-    margin-top: 10px;
-    font-size: 20px;
-    color: white;
+    position : relative;
+    top : 80px;
+    font-size: 43px;
+    left :44%;
+    color: #4CAF50; /* Green */
 }
+
 .grab-logo {
-    width: 150px;
+    width: 160px;
     height: auto;
+    top : 110px;
+    left : 45%;
+    position: relative; /* Now inside .MainLogo, we don't need absolute positioning */
+}
+/* Wrapper for the buttons */
+/* Wrapper for the buttons */
+.landingPagebtn {
+    display: flex; /* Use flexbox to align the buttons vertically */
+    flex-direction: column; /* Stack the buttons vertically */
+    gap: 15px; /* Add space between buttons */
+    align-items: center; /* Center the buttons horizontally */
+    margin-top: 170px; /* Adjust this value to move the buttons lower */
+}
+
+/* Button styles */
+button {
+    border: none;
+    padding: 10px 20px; /* Adjust padding for size */
+    font-size: 16px;
+    cursor: pointer;
+    position: relative; /* To make sure the rectangle is placed relative to the button */
+    background-color: transparent; /* Make the background transparent */
+    color: white; /* Text color */
+    outline: none; /* Remove the outline on focus */
+}
+
+button:before {
+    content: ""; /* Empty content to create the rectangle */
     position: absolute;
-    left: 50%;
-    top: 200px; /* Distance from the top */
-    transform: translateX(-50%); /* Center horizontally */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: white; /* White rectangle */
+    border-radius: 15px; /* Rounded corners */
+    z-index: -1; /* Place it behind the text */
+}
+
+.login, .signup {
+    font-size: 18px;
+    background-color: white;
+    color: #45a049;
+}
+
+.loginDetails {
+    display: flex;
+    flex-direction: column; /* Stack vertically */
+    align-items: center;    /* Center horizontally */
+    margin-top: 250px;      /* Push it down vertically */
+    font-size: 16px;
+}
+
+.loginDetails label {
+    font-size: 20px;
+    color: white; /* or any color you want */
+    margin-bottom: 5px;
+    display: block;
+}
+
+.loginDetails input {
+    width: 300px;
+    padding: 10px;
+    margin: 10px 0;          /* Add space between inputs */
+    border-radius: 10px;
+    border: none;
+    font-size: 16px;
+}
+
+.confirmLoginbtn {
+    width: 150px; /* Button width */
+    height: 50px; /* Button height */
+    font-size: 18px; /* Size of the text */
+    color:  #45a049; /* Text color */
+    background-color: white; /* Button background color (green in this case) */
+    border: none; /* No border */
+    border-radius: 10px; /* Rounded corners */
+    cursor: pointer; /* Cursor turns to pointer on hover */
+    margin: 10px; /* Space between buttons if multiple */
 }
