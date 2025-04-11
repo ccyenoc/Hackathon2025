@@ -221,3 +221,29 @@ button.btn:hover {
     background-color: #45a049; /* Darker green when hovered */
 }
 
+.white-rectangle {
+    width: 230px;
+    height: 230px;
+    background-color: white;
+    border-radius: 15px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    position: absolute;
+    left: 50%;
+    top: 25%;
+    transform: translate(-50%, -50%);
+}
+
+/* Fix class name & center the MainLogo */
+.MainLogo {
+    position: absolute;
+    top: 60%;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+}
+
+.logo_Merchant {
+    margin-top: 10px;
+    font-size: 20px;
+    color: white;
+}
