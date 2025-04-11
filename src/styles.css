@@ -110,6 +110,7 @@ nav {
     background-color: #4CAF50;
     color: white;
     transition: background-color 0.3s;
+    margin-bottom: 10px; /* Adds space below the button */
 }
 
 /* Button hover effect */
@@ -205,3 +206,18 @@ button:hover {
     66% { width: 0.4em; }
     100% { width: 0.6em; }
 }
+
+button.btn {
+    background-color: #4CAF50; /* Green */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+button.btn:hover {
+    background-color: #45a049; /* Darker green when hovered */
+}
+

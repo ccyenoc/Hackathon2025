@@ -31,12 +31,14 @@
         "Feel free to drop me a question  if your enquires is not in the list below.<br>" +
         "If you need a live agent to assist you, may click the “Live Agent” button down below.<br>";
 
-    window.onload = function() {
-        sendMessage(defaultMessage, true);
-        generateFAQButtons();  // Trigger button generation
+    window.onload = function(){
+        sendMessageandButtons(defaultMessage, true)
     };
 
+
 </script>
+
+
 
 <div class="chatbox">
     <div class="messages">
@@ -50,7 +52,8 @@
     </div>
 </div>
 
-<script src="Chat.js"></script> <!-- Link to your JS file -->
+<script src="Chat.js" defer></script>
+
 
 </body>
 </html>
