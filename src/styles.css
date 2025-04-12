@@ -116,6 +116,7 @@ nav {
 /* Button hover effect */
 .btn:hover {
     background-color: #45a049;
+    color : white;
 }
 
 /* Chatbox styles */
@@ -195,10 +196,6 @@ button {
     cursor: pointer;
 }
 
-button:hover {
-    background-color: #009f44;
-}
-
 /* Typing animation */
 @keyframes typing {
     0% { width: 0; }
@@ -206,19 +203,24 @@ button:hover {
     66% { width: 0.4em; }
     100% { width: 0.6em; }
 }
-
 button.btn {
-    background-color: #4CAF50; /* Green */
-    color: white;
+    background-color: #28a745; /* Visible green */
+    color: black;              /* Visible text */
     padding: 10px 20px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 16px;
 }
 
 button.btn:hover {
-    background-color: #45a049; /* Darker green when hovered */
+    background-color: #00b14f;
+    color: white;
+}
+
+
+button.btn:hover {
+    background-color: #00b14f; /* Darker green when hovered */
+    color : white;
 }
 
 .white-rectangle {
@@ -229,7 +231,7 @@ button.btn:hover {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     position: absolute;
     left: 50%;
-    top: 25%;
+    top: 30%;
     transform: translate(-50%, -50%);
     text-align: center; /* Center everything inside */
     display: flex;
@@ -244,52 +246,28 @@ button.btn:hover {
 
 .logo_Merchant {
     position : relative;
-    top : 80px;
+    top : 110px;
     font-size: 43px;
     left :44%;
-    color: #4CAF50; /* Green */
+    color: #00b14f; /* Green */
 }
 
 .grab-logo {
     width: 160px;
     height: auto;
-    top : 110px;
+    top : 140px;
     left : 45%;
-    position: relative; /* Now inside .MainLogo, we don't need absolute positioning */
+    position: relative;
 }
-/* Wrapper for the buttons */
-/* Wrapper for the buttons */
+
 .landingPagebtn {
-    display: flex; /* Use flexbox to align the buttons vertically */
-    flex-direction: column; /* Stack the buttons vertically */
-    gap: 15px; /* Add space between buttons */
-    align-items: center; /* Center the buttons horizontally */
-    margin-top: 170px; /* Adjust this value to move the buttons lower */
+    display: flex;
+    flex-direction: column;
+    gap: 35px;
+    align-items: center;
+    margin-top: 250px;
 }
 
-/* Button styles */
-button {
-    border: none;
-    padding: 10px 20px; /* Adjust padding for size */
-    font-size: 16px;
-    cursor: pointer;
-    position: relative; /* To make sure the rectangle is placed relative to the button */
-    background-color: transparent; /* Make the background transparent */
-    color: white; /* Text color */
-    outline: none; /* Remove the outline on focus */
-}
-
-button:before {
-    content: ""; /* Empty content to create the rectangle */
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: white; /* White rectangle */
-    border-radius: 15px; /* Rounded corners */
-    z-index: -1; /* Place it behind the text */
-}
 
 .login, .signup {
     font-size: 18px;
@@ -324,6 +302,7 @@ button:before {
 .confirmLoginbtn {
     width: 150px; /* Button width */
     height: 50px; /* Button height */
+    left : 45%;
     font-size: 18px; /* Size of the text */
     color:  #45a049; /* Text color */
     background-color: white; /* Button background color (green in this case) */

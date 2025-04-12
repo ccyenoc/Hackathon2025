@@ -1,4 +1,3 @@
-
 window.onload = function () {
             setTimeout(function () {
                 var typingMessage = document.querySelector('.typing');
@@ -17,6 +16,10 @@ window.onload = function () {
                     if (window.location.pathname.includes('FAQ.html')) {
                         generateFAQButtons(); // Make sure this function is defined
                         console.log("This is the FAQ page.");
+                    }
+                    else if(window.location.pathname.includes('BusinessInsight.html')){
+                        generateBusinessInsightbuttons();
+                        console.log("This is Business Insight page.");
                     }
                 }
             }, 2000);
@@ -71,7 +74,12 @@ async function sendMessage(message, merchantId = null, isAuto = false) {
 
     if (userMessage.trim() === "") return;
 
-    // If merchantId is not provided, try to get it from localStorage
+    if (userMessage.toLowerCase().includes("sales trend")) {
+        displaySalesTrend();
+        userInput.value = "";
+        return;
+    }
+
     if (!merchantId) {
         merchantId = localStorage.getItem('merchantID');
         console.log("Retrieved merchantId from localStorage:", merchantId);
@@ -88,7 +96,6 @@ async function sendMessage(message, merchantId = null, isAuto = false) {
         return;
     }
 
-    // Rest of your function remains the same...
 
     // Display the user's message in the chat
     if (!isAuto) {
@@ -130,11 +137,13 @@ async function sendMessage(message, merchantId = null, isAuto = false) {
         responseMessage.classList.add('message', 'received');
 
         if (response.ok) {
-            responseMessage.innerHTML = `${data.response}`;
+            const formattedResponse = formatGenericMessage(data.response);
+            responseMessage.innerHTML = formattedResponse;
         } else {
             responseMessage.classList.add('error');
             responseMessage.innerHTML = `Error: ${data.error || "Unexpected error"}`;
         }
+
 
         document.querySelector('.messages').appendChild(responseMessage);
         document.querySelector('.messages').scrollTop = document.querySelector('.messages').scrollHeight;
@@ -362,36 +371,61 @@ function displayInventoryStatus() {
 
 }
 
-function displaySalesTrend(){
+function displaySalesTrend() {
     scrollToNewMessage();
-    const inventoryMessage = "Here is your store sales trend summary :";
 
+    let merchantId = localStorage.getItem('merchantID');
+    console.log('MerchantId : ',merchantId);
+    if (!merchantId) {
+        console.error('Merchant ID is not available');
+        return;
+    }
+
+    const inventoryMessage = "Here is your store sales trend summary:";
     const message = document.createElement('div');
     message.classList.add('message', 'received');
-    message.innerText = inventoryMessage;  // Add the inventory summary message
+    message.innerText = inventoryMessage;
     document.querySelector('.messages').appendChild(message);
 
-    // Fetch sales trend from backend
+    // Optional: Add a temporary typing indicator
+    const typingMessage = document.createElement('div');
+    typingMessage.classList.add('message', 'typing');
+    typingMessage.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+    document.querySelector('.messages').appendChild(typingMessage);
+
     fetch('http://127.0.0.1:5001/sales_trend', {
         method: 'GET',
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'merchant-id': merchantId
         }
     })
         .then(response => response.json())
         .then(data => {
-            // Display the response data in the chat (as a message)
-            let responseMessage = document.createElement('div');
+            document.querySelector('.messages').removeChild(typingMessage);
+
+            const responseMessage = document.createElement('div');
             responseMessage.classList.add('message', 'received');
-            responseMessage.innerHTML = `<span class="message-text">${data.reply}</span>`;
+            responseMessage.innerHTML = `
+                <span class="message-text">${data.reply}</span>
+                <br>
+                <img src="${data.chart_url}" alt="Sales Trend Chart" style="max-width: 100%; border-radius: 12px; margin-top: 8px;">
+            `;
             document.querySelector('.messages').appendChild(responseMessage);
             scrollToNewMessage();
         })
         .catch(error => {
-            console.error('Error:', error);
-            // Optionally handle the error by displaying a message
+            console.error('Error fetching sales trend:', error);
+            document.querySelector('.messages').removeChild(typingMessage);
+
+            const errorMessage = document.createElement('div');
+            errorMessage.classList.add('message', 'received', 'error');
+            errorMessage.innerText = "Sorry, I couldn't fetch the sales trend chart.";
+            document.querySelector('.messages').appendChild(errorMessage);
+            scrollToNewMessage();
         });
 }
+
 
 
 
@@ -419,4 +453,21 @@ function displayOperationalBottleneck(){
 
 /* Tailored Advice page */
 
-/* for backend */
+/* format  the message given */
+function formatGenericMessage(rawMessage) {
+    return rawMessage
+        // Bold formatting: **text**
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+
+        // Line breaks for numbered lists: 1. Something
+        .replace(/(\d+\.\s)/g, '<br>$1')
+
+        // Line breaks for dash lists: - Something
+        .replace(/(\n|^)-\s/g, '<br>• ')
+
+        // Extra spacing between double line breaks (paragraphs)
+        .replace(/\n{2,}/g, '<br><br>')
+
+        // Replace single line breaks with <br>
+        .replace(/\n/g, '<br>');
+}
