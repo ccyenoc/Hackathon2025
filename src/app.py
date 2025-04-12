@@ -365,4 +365,4 @@ def start_workers():
 # === RUN APP ===
 if __name__ == '__main__':
     start_workers()  # Comment this out if not needed
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=8000)

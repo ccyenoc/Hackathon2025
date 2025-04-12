@@ -87,7 +87,7 @@ function confirmLogin() {
 }
 // Function to send merchant ID to the Python backend
 function sendMerchantIdToBackend(merchantId) {
-    fetch('http://127.0.0.1:5001/api/save_merchant_id', {
+    fetch('http://127.0.0.1:8000/api/save_merchant_id', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -146,7 +146,7 @@ async function sendMessage(message, merchantId = null, isAuto = false) {
     try {
         console.log("merchantId:", merchantId);
         console.log("userMessage:", userMessage);
-        const response = await fetch('http://127.0.0.1:5001/api/query', {
+        const response = await fetch('http://127.0.0.1:8000/api/query', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -488,7 +488,7 @@ function displayInventoryStatus() {
     typingMessage.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
     document.querySelector('.messages').appendChild(typingMessage);
 
-    fetch('http://127.0.0.1:5001/inventory_status', {
+    fetch('http://127.0.0.1:8000/inventory_status', {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -548,7 +548,7 @@ function displaySalesTrend() {
     typingMessage.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
     document.querySelector('.messages').appendChild(typingMessage);
 
-    fetch('http://127.0.0.1:5001/sales_trend', {
+    fetch('http://127.0.0.1:8000/sales_trend', {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -602,7 +602,7 @@ function displaySalesOpportunity(){
     typingMessage.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
     document.querySelector('.messages').appendChild(typingMessage);
 
-    fetch('http://127.0.0.1:5001/sales_opportunity', {
+    fetch('http://127.0.0.1:8000/sales_opportunity', {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -658,7 +658,7 @@ function displayOperationalBottleneck() {
     typingMessage.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
     document.querySelector('.messages').appendChild(typingMessage);
 
-    fetch('http://127.0.0.1:5001/operational_bottleneck', {
+    fetch('http://127.0.0.1:8000/operational_bottleneck', {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
