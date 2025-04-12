@@ -12,6 +12,14 @@ body {
     font-family: Arial, sans-serif;          /* Font */
 }
 
+.background {
+    background-image: url('../src/pic/bg.png'); /* Go up one directory, then into /src/pic/ */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+
 .content {
     text-align: center;                    /* Center the text */
     padding: 20px;                          /* Add some padding around the content */
@@ -205,7 +213,7 @@ button {
 }
 button.btn {
     background-color: #28a745; /* Visible green */
-    color: black;              /* Visible text */
+    color: white;              /* Visible text */
     padding: 10px 20px;
     border: none;
     border-radius: 5px;
@@ -279,7 +287,7 @@ button.btn:hover {
     display: flex;
     flex-direction: column; /* Stack vertically */
     align-items: center;    /* Center horizontally */
-    margin-top: 250px;      /* Push it down vertically */
+    margin-top: 200px;      /* Push it down vertically */
     font-size: 16px;
 }
 
@@ -293,21 +301,127 @@ button.btn:hover {
 .loginDetails input {
     width: 300px;
     padding: 10px;
-    margin: 10px 0;          /* Add space between inputs */
+    margin: 10px 0;
     border-radius: 10px;
     border: none;
     font-size: 16px;
 }
 
 .confirmLoginbtn {
-    width: 150px; /* Button width */
-    height: 50px; /* Button height */
-    left : 45%;
-    font-size: 18px; /* Size of the text */
-    color:  #45a049; /* Text color */
-    background-color: white; /* Button background color (green in this case) */
-    border: none; /* No border */
-    border-radius: 10px; /* Rounded corners */
-    cursor: pointer; /* Cursor turns to pointer on hover */
-    margin: 10px; /* Space between buttons if multiple */
+    width: 150px;
+    height: 50px;
+    position: absolute; /* 👈 Add this line */
+    left: 56%;
+    top : 600px;
+    transform: translateX(-50%); /* 👈 Center horizontally */
+    font-size: 18px;
+    color: #45a049;
+    background-color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    margin: 10px;
 }
+
+.back_to_landingpage{
+    width: 150px;
+    height: 50px;
+    position: absolute; /* 👈 Add this line */
+    left: 43%;
+    top : 600px;
+    transform: translateX(-50%); /* 👈 Center horizontally */
+    font-size: 18px;
+    color: #45a049;
+    background-color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    margin: 10px;
+}
+
+.continueWith{
+    font-size: 15px;
+    font-color : black;
+    top : 530px;
+    left : 47%;
+    position : absolute;
+}
+
+.continueWithApp {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px; /* Space between the icons */
+    margin-top: 40px; /* Add some margin from the top */
+}
+
+.continueWithApp img {
+    width: auto; /* Set width for each logo */
+    height: 30px; /* Set height for each logo */
+    cursor: pointer; /* Change cursor to pointer to indicate clickable elements */
+    transition: transform 0.3s ease; /* Add smooth transition for hover effect */
+}
+
+.continueWithApp img:hover {
+    transform: scale(1.1); /* Slightly enlarge the icons on hover */
+}
+
+/* Typing animation dots */
+.typing .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin: 0 2px;
+    background-color: #000;
+    border-radius: 50%;
+    animation: typing 1.5s infinite ease-in-out;
+}
+
+.typing .dot:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.typing .dot:nth-child(2) {
+    animation-delay: 0.3s;
+}
+
+.typing .dot:nth-child(3) {
+    animation-delay: 0.6s;
+}
+
+/* Keyframes for the typing animation */
+@keyframes typing {
+    0% {
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+.get_advice_btn {
+    padding: 8px 15px;            /* Small padding to make it more compact */
+    font-size: 15px;              /* Smaller font size */
+    background-color: #4CAF50;    /* Button background color */
+    color: white;                 /* Text color */
+    border: none;                 /* Remove border */
+    cursor: pointer;             /* Pointer cursor on hover */
+    border-radius: 5px;           /* Rounded corners */
+    margin-bottom: 10px;          /* Space below the button only */
+    width: auto;                  /* Button width automatically adjusts based on content */
+    max-width: 200px;             /* Optional: Set a max width to prevent it from growing too large */
+    display: block;               /* Makes the button take up the full available width in the container */
+    text-align: center;           /* Center align the text */
+}
+
+.get_advice_btn:hover {
+    background-color: #45a049;    /* Darker shade when hovered */
+    color : white;
+}
+
+.backend-message {
+    background-color: #b4b4b4;
+}
+

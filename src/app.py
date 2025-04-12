@@ -2,8 +2,7 @@ import gdown
 import pandas as pd
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from smart_assistant import SmartMerchantAssistant
-from smart_assistant import generate_sales_insights
+from smart_assistant import SmartMerchantAssistant, generate_sales_insights
 from together import Together
 from multiprocessing import Process
 import logging
@@ -13,22 +12,13 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
-# === DOWNLOAD DATA ===
-merchant_url = 'https://drive.google.com/uc?id=1i1Vq0_FiGnGjxWe8wwwgHHNE8DNnkNR9'
-items_url = 'https://drive.google.com/uc?id=1H1e1DgYXJ1cu5xJ7yGsrd3rnUZ9yy_ZB'
-transaction_data_url = 'https://drive.google.com/uc?id=1MjNDpjkMoefpLcV3RffJSTmHKITFt5l0'
-transaction_items_url = 'https://drive.google.com/uc?id=1S_z_qajdSZ3NCklOXAmy8tqziDsPkvmN'
-
-gdown.download(merchant_url, 'merchant.csv', quiet=False)
-gdown.download(items_url, 'items.csv', quiet=False)
-gdown.download(transaction_data_url, 'transaction_data.csv', quiet=False)
-gdown.download(transaction_items_url, 'transaction_items.csv', quiet=False)
-
-# === LOAD DATA ===
 merchant_df = pd.read_csv('merchant.csv')
 items_df = pd.read_csv('items.csv')
 transaction_df = pd.read_csv('transaction_data.csv')
 transaction_item_df = pd.read_csv('transaction_items.csv')
+keyword_df = pd.read_csv('keywords.csv')
+
+
 
 # === PROCESS DATA ===
 transaction_df['order_time'] = pd.to_datetime(transaction_df['order_time'])
@@ -86,19 +76,250 @@ def handle_query():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/sales_trend', methods=['GET'])
+@app.route('/sales_trend', methods=['GET', 'OPTIONS'])  # Add OPTIONS to the methods
 def sales_trend():
+    if request.method == 'OPTIONS':
+        # Handle preflight request
+        response = jsonify({})
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:63342')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,merchant-id')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+        return response
+
     try:
-        top_sales = merchant_sales.sort_values(by='total_sales', ascending=False).head(5)
-        summary_lines = []
-        for _, row in top_sales.iterrows():
-            summary_lines.append(
-                f"Merchant ID: {row['merchant_id']} - Total Sales: RM{row['total_sales']:.2f} from {int(row['total_orders'])} orders"
-            )
-        summary = "\n".join(summary_lines)
-        return jsonify({"reply": summary})
+        # Get the merchant id from the request header
+        merchant_id = request.headers.get('merchant-id')
+
+        if not merchant_id:
+            response = jsonify({"error": "Missing merchant ID"})
+            response.headers.add('Access-Control-Allow-Origin', 'http://localhost:63342')
+            return response
+
+        # Initialize the SmartMerchantAssistant with necessary dataframes
+        assistant = SmartMerchantAssistant(merchant_id, merchant_df, items_df, transaction_df, transaction_item_df)
+
+        # Generate sales insights
+        sales_insights = assistant.sales_insights
+
+        # Create a meaningful reply based on the actual structure of sales_insights
+        reply = f"Sales trend: {sales_insights['sales_trend']}. "
+        if sales_insights['sales_growth_rate'] is not None:
+            reply += f"Growth rate: {sales_insights['sales_growth_rate']:.1f}%. "
+        reply += f"Last 30 days sales: RM{sales_insights['last_30_days_sales']:.2f}."
+
+        # Create and return response with CORS headers
+        response = jsonify({
+            'reply': reply,
+            'chart_url': ""  # Set appropriately if you have a chart URL
+        })
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:63342')
+        return response
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        import traceback
+        traceback.print_exc()
+        response = jsonify({"error": str(e)})
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:63342')
+        return response
+
+@app.route('/inventory_status', methods=['GET', 'OPTIONS'])
+def inventory_status():
+    if request.method == 'OPTIONS':
+        response = jsonify({})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,merchant-id')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+        return response
+
+    try:
+        merchant_id = request.headers.get('merchant-id')
+        if not merchant_id:
+            response = jsonify({"error": "Missing merchant ID"})
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            return response
+
+        assistant = SmartMerchantAssistant(merchant_id, merchant_df, items_df, transaction_df, transaction_item_df, keyword_df)
+        insights = assistant.inventory_insights
+
+        print("Insights: ", insights)
+
+        # Create a more detailed inventory status message
+        reply = ""
+
+        # Check if there's an error in insights
+        if 'error' in insights:
+            reply = f"⚠️ {insights['error']}"
+        else:
+            # Include total inventory count
+            total_items = insights.get('total_items', 0)
+            active_items = insights.get('active_items', 0)
+            reply = f"📦 You currently have {total_items} total items in your inventory, with {active_items} active items that have been ordered.\n\n"
+
+            # Add top sellers information if available
+            top_sellers = insights.get('top_sellers')
+            if top_sellers is not None and not top_sellers.empty:
+                reply += "🔥 Top selling items:\n"
+                for _, item in top_sellers.head(3).iterrows():
+                    reply += f"• {item['item_name']} - {item['order_count']} orders\n"
+                reply += "\n"
+
+            # Add slow movers information if available
+            slow_movers = insights.get('slow_movers')
+            if slow_movers is not None and not slow_movers.empty:
+                reply += "⚠️ Items that need attention (slow moving):\n"
+                for _, item in slow_movers.head(3).iterrows():
+                    reply += f"• {item['item_name']} - only {item['order_count']} orders\n"
+                reply += "\n"
+
+            # Add low stock warning if available
+            if insights.get('low_stock', 0) > 0:
+                reply += f"⚠️ Warning: {insights['low_stock']} items are low on stock.\n"
+
+        response = jsonify({
+            'reply': reply,
+            'chart_url': ""  # Set appropriately if you have a chart URL
+        })
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        response = jsonify({"error": str(e)})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
+
+@app.route('/operational_bottleneck', methods=['GET', 'OPTIONS'])
+def operational_bottleneck():
+    print("Received request for operational bottleneck")
+
+    if request.method == 'OPTIONS':
+        # Handle preflight request
+        response = jsonify({})
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:63342')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,merchant-id')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+        return response
+
+    try:
+        # Get the merchant id from the request header
+        merchant_id = request.headers.get('merchant-id')
+
+        if not merchant_id:
+            response = jsonify({"error": "Missing merchant ID"})
+            response.headers.add('Access-Control-Allow-Origin', 'http://localhost:63342')
+            return response
+
+        # Initialize the SmartMerchantAssistant with necessary dataframes
+        assistant = SmartMerchantAssistant(merchant_id, merchant_df, items_df, transaction_df, transaction_item_df)
+
+        # Debug: Check what is returned by assistant.bottleneck_insights
+        bottleneck_insights = assistant.bottleneck_insights
+        print("Operational bottleneck insights:", bottleneck_insights)
+
+        if 'bottlenecks' not in bottleneck_insights:
+            response = jsonify({"error": "Bottleneck data not available."})
+            response.headers.add('Access-Control-Allow-Origin', 'http://localhost:63342')
+            return response
+
+        # Compose reply from bottlenecks
+        bottlenecks = bottleneck_insights['bottlenecks']
+        reply = "🛠️ Operational bottlenecks identified:\n" + "\n".join(f"- {b}" for b in bottlenecks)
+
+        # Optionally include average wait time
+        if 'wait_time_stats' in bottleneck_insights:
+            avg_wait = bottleneck_insights['wait_time_stats']['mean']
+            reply += f"\n\n📊 Average wait time: {avg_wait:.1f} minutes."
+
+        response = jsonify({
+            'reply': reply,
+            'chart_url': ""
+        })
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:63342')
+        return response
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        response = jsonify({"error": f"An error occurred: {str(e)}"})
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:63342')
+        return response
+
+@app.route('/sales_opportunity', methods=['GET', 'OPTIONS'])
+def sales_opportunity():
+    if request.method == 'OPTIONS':
+        # Correct CORS headers for preflight request
+        response = jsonify({})
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:63342')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,merchant-id')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+        return response
+
+    try:
+        merchant_id = request.headers.get('merchant-id')
+        if not merchant_id:
+            response = jsonify({"error": "Missing merchant ID"})
+            response.headers.add('Access-Control-Allow-Origin', 'http://localhost:63342')
+            return response
+
+        # Get insights from the assistant
+        assistant = SmartMerchantAssistant(merchant_id, merchant_df, items_df, transaction_df, transaction_item_df, keyword_df)
+        insights = assistant.keyword_insights
+
+        # Print insights for debugging
+        print("Keyword Insights:", insights)
+
+        # Format a detailed response
+        reply = ""
+
+        # Check for errors
+        if 'error' in insights:
+            reply = f"⚠️ {insights['error']}"
+            if 'suggestion' in insights:
+                reply += f"\n\nSuggestion: {insights['suggestion']}"
+        else:
+            # Add keyword count
+            keyword_count = insights.get('relevant_keywords_count', 0)
+            reply += f"📊 Analysis based on {keyword_count} relevant keywords for your store.\n\n"
+
+            # Add trending keywords if available
+            trending_keywords = insights.get('trending_keywords', [])
+            if trending_keywords:
+                reply += f"🔥 Trending search terms: {', '.join(trending_keywords[:5])}\n\n"
+
+            # Get top searched keywords
+            top_searched = insights.get('top_searched_keywords', [])
+            if top_searched and len(top_searched) > 0:
+                reply += "🔍 Top searched keywords:\n"
+                for i, kw in enumerate(top_searched[:3], 1):
+                    reply += f"{i}. {kw.get('keyword', 'Unknown')} - {kw.get('view', 0)} views\n"
+                reply += "\n"
+
+            # Add opportunities
+            opportunities = insights.get('opportunities', [])
+            if opportunities:
+                reply += "💡 Opportunities:\n"
+                for i, opp in enumerate(opportunities[:2], 1):
+                    reply += f"{i}. {opp}\n"
+                reply += "\n"
+
+            # Add recommendations
+            recommendations = insights.get('recommendations', [])
+            if recommendations:
+                reply += "✅ Recommendations:\n"
+                for i, rec in enumerate(recommendations[:2], 1):
+                    reply += f"{i}. {rec}\n"
+
+        response = jsonify({'reply': reply})
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:63342')
+        return response
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        response = jsonify({"error": f"Error processing sales opportunity: {str(e)}"})
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:63342')
+        return response
 
 # === OPTIONAL: TOGETHER CHAT ENDPOINT ===
 
@@ -128,14 +349,6 @@ def predict():
     result = f"Processed input: {data['input']}"
     return jsonify({'prediction': result})
 
-@app.route('/sales_trend', methods=['GET'])
-def sales_trend():
-    merchant_id = request.args.get('merchant_id')  # Get merchant_id from query params
-    if merchant_id:
-        result = generate_sales_insights(merchant_id)  # Call the function from smart.py
-        return jsonify(result)  # Send the result back as a JSON response
-    else:
-        return jsonify({"error": "Merchant ID is required"}), 400
 
 # === BACKGROUND WORKERS (IF NEEDED) ===
 

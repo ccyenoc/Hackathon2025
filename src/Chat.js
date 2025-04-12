@@ -21,10 +21,47 @@ window.onload = function () {
                         generateBusinessInsightbuttons();
                         console.log("This is Business Insight page.");
                     }
+                    else if(window.location.pathname.includes('TailoredAdvice.html')){
+                        generateGetAdviceBtn();
+                        console.log("This is Business Insight page.");
+                    }
                 }
             }, 2000);
 
+    const userInputField = document.getElementById('userMessage');  // Assuming your input field has this id
+    if (userInputField) {
+        userInputField.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();  // Prevent default Enter key behavior (e.g., form submission)
+                sendMessage();  // Call the sendMessage function
+            }
+        });
+    }
+
 };
+
+/* format  the message given */
+function formatGenericMessage(rawMessage) {
+    console.log("Message formatted.")
+    return rawMessage
+        // Format bold **text**
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+
+        // Format emojis and labels with spacing
+        .replace(/(📊|🔥|🔍|💡|✅)/g, '<br><br>$1')
+
+        // Format numbered lists (e.g., 1. Keyword - views)
+        .replace(/(\d+\.\s[\w\s\-]+-\s\d+\sviews)/g, '<br>$1')
+
+        // Format opportunities and recommendations as bullet points
+        .replace(/(\d+\.\s)(.*?)(?=\d+\.|$)/gs, (match, num, content) => {
+            return `<br>${num}<span>${content.trim()}</span>`;
+        })
+
+        // Add line breaks for newlines
+        .replace(/\n{2,}/g, '<br><br>')
+        .replace(/\n/g, '<br>');
+}
 
 function confirmLogin() {
     const merchantInput = document.getElementById("merchant-id");
@@ -74,12 +111,6 @@ async function sendMessage(message, merchantId = null, isAuto = false) {
 
     if (userMessage.trim() === "") return;
 
-    if (userMessage.toLowerCase().includes("sales trend")) {
-        displaySalesTrend();
-        userInput.value = "";
-        return;
-    }
-
     if (!merchantId) {
         merchantId = localStorage.getItem('merchantID');
         console.log("Retrieved merchantId from localStorage:", merchantId);
@@ -88,14 +119,12 @@ async function sendMessage(message, merchantId = null, isAuto = false) {
     // If still no merchantId, log error and return
     if (!merchantId) {
         console.error("No merchant ID available. Please log in first.");
-        // Show error to user
         const errorMessage = document.createElement('div');
         errorMessage.classList.add('message', 'received', 'error');
         errorMessage.innerHTML = `Error: Please log in first to establish your merchant ID.`;
         document.querySelector('.messages').appendChild(errorMessage);
         return;
     }
-
 
     // Display the user's message in the chat
     if (!isAuto) {
@@ -111,7 +140,7 @@ async function sendMessage(message, merchantId = null, isAuto = false) {
     // Show typing indicator
     const typingMessage = document.createElement('div');
     typingMessage.classList.add('message', 'typing');
-    typingMessage.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>'; // optional animated dots
+    typingMessage.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
     document.querySelector('.messages').appendChild(typingMessage);
 
     try {
@@ -119,24 +148,27 @@ async function sendMessage(message, merchantId = null, isAuto = false) {
         console.log("userMessage:", userMessage);
         const response = await fetch('http://127.0.0.1:5001/api/query', {
             method: 'POST',
-
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-
                 merchant_id: merchantId,
                 query: userMessage,
             }),
         });
 
         const data = await response.json();
-        document.querySelector('.messages').removeChild(typingMessage);
+
+        // Remove typing message if it's still in the DOM
+        if (document.querySelector('.messages').contains(typingMessage)) {
+            document.querySelector('.messages').removeChild(typingMessage);
+        }
 
         const responseMessage = document.createElement('div');
-        responseMessage.classList.add('message', 'received');
+        responseMessage.classList.add('message', 'received', 'backend-message'); // Added 'backend-message' class
 
         if (response.ok) {
+            // Format the response before displaying it
             const formattedResponse = formatGenericMessage(data.response);
             responseMessage.innerHTML = formattedResponse;
         } else {
@@ -144,12 +176,16 @@ async function sendMessage(message, merchantId = null, isAuto = false) {
             responseMessage.innerHTML = `Error: ${data.error || "Unexpected error"}`;
         }
 
-
         document.querySelector('.messages').appendChild(responseMessage);
         document.querySelector('.messages').scrollTop = document.querySelector('.messages').scrollHeight;
+
     } catch (error) {
         console.error('Network error:', error);
-        document.querySelector('.messages').removeChild(typingMessage);
+
+        // Remove typing message if it's still in the DOM
+        if (document.querySelector('.messages').contains(typingMessage)) {
+            document.querySelector('.messages').removeChild(typingMessage);
+        }
 
         const errorMessage = document.createElement('div');
         errorMessage.classList.add('message', 'received', 'error');
@@ -157,9 +193,8 @@ async function sendMessage(message, merchantId = null, isAuto = false) {
         document.querySelector('.messages').appendChild(errorMessage);
         document.querySelector('.messages').scrollTop = document.querySelector('.messages').scrollHeight;
     }
-
-
 }
+
 /* FAQ page */
 // Function to generate FAQ buttons
 function generateFAQButtons() {
@@ -306,7 +341,7 @@ function formatBoostSalesFAQ() {
 
     button.onclick = function () {
         // Action when the button is clicked (for example, show inventory data)
-        displaySalesTrend();
+        displaySalesOpportunity();
         scrollToNewMessage();
     };
 
@@ -316,78 +351,198 @@ function formatBoostSalesFAQ() {
 
 /* Business Insight page */
 /* Generate buttons for Business Insight */
-function generateBusinessInsightbuttons(){
+function generateBusinessInsightbuttons() {
+    // Create the button container and add a unique ID to the container
     var buttonContainer = document.createElement('div');
     buttonContainer.classList.add('btnContainer');
+    buttonContainer.id = 'business-insight-buttons';  // Assigning an ID to the container
 
+    // Array of button texts
     var buttons = [
         "Sales Trend",
         "Sales Opportunity",
         "Inventory Status",
-        "Operational bottleneck"
+        "Operational Bottleneck"
     ];
 
-    buttons.forEach(function (text) {
+    // Loop over the buttons array to create each button
+    buttons.forEach(function (text, index) {
         const button = document.createElement('button');
         button.classList.add('btn');
-        button.innerHTML = text;  // Use innerHTML to render the HTML tags
+        button.innerHTML = text;  // Set the button's inner HTML (text)
 
-        // Attach click event
+        // Set the ID for each button using text (replace spaces with hyphens and convert to lowercase)
+        button.id = 'button-' + text.replace(/\s+/g, '-').toLowerCase();
+
+        // Handle the click event based on button text
         button.onclick = function () {
             console.log("Button clicked: " + text);
 
-            let answerMessage = '';
-
+            // Check the button text to decide which function to call
             if (text.includes("Sales Trend")) {
-                answerMessage = displaySalesTrend();
+                displaySalesTrend();
             } else if (text.includes("Sales Opportunity")) {
-                answerMessage = displaySalesTrend();
+                displaySalesOpportunity();
             } else if (text.includes("Inventory Status")) {
-                answerMessage = displayInventoryStatus();
-            } else if (text.includes("Operational Bottleneck")) {
-                answerMessage = displaySalesTrend();
+                console.log("Buttons contain WORD Inventory Status.");
+                displayInventoryStatus();
+            } else if (text.toLowerCase().includes("operational bottleneck")) {
+                displayOperationalBottleneck();
             }
 
+            // Optionally scroll to the new message
             scrollToNewMessage();
         };
 
-        // Append the button to a container
+        // Append the button to the container
         buttonContainer.appendChild(button);
     });
 
+    // Append the button container to the messages container
     document.querySelector('.messages').appendChild(buttonContainer);
 }
 
 
+document.addEventListener("DOMContentLoaded", () => {
+    const buttonContainer = document.querySelector('.button-container');
+
+    if (buttonContainer) {
+        buttonContainer.addEventListener('click', (event) => {
+            const target = event.target;
+
+            if (target.tagName === 'BUTTON') {
+                const messageText = target.textContent.trim();
+                const dataAction = target.getAttribute('data-action');
+
+                // Display user's message
+                const userMessage = document.createElement('div');
+                userMessage.classList.add('message', 'sent');
+                userMessage.innerHTML = `<span class="message-text">${messageText}</span>`;
+                document.querySelector('.messages').appendChild(userMessage);
+                scrollToNewMessage();
+
+                // Debug log
+                console.log("Button clicked: " + messageText);
+
+                // Display simulated AI response
+                const simulatedMessage = `📊 Analysis based on 527 relevant keywords for your store...`;
+                const formatted = formatGenericMessage(simulatedMessage);
+
+                const responseMessage = document.createElement('div');
+                responseMessage.classList.add('message', 'received');
+                responseMessage.innerHTML = formatted;
+                document.querySelector('.messages').appendChild(responseMessage);
+                document.querySelector('.messages').scrollTop = document.querySelector('.messages').scrollHeight;
+
+                // Handle button action
+                if (dataAction) {
+                    switch (dataAction) {
+                        case 'sales_trend':
+                            displaySalesTrend();
+                            break;
+                        case 'sales_opportunity':
+                            displaySalesOpportunity();
+                            break;
+                        case 'inventory_status':
+                            displayInventoryStatus();
+                            break;
+                        case 'operational_bottleneck':
+                            displayOperationalBottleneck();
+                            break;
+                        default:
+                            console.warn(`Unrecognized action: ${dataAction}`);
+                            sendMessage(messageText);
+                            break;
+                    }
+                } else {
+                    sendMessage(messageText);
+                }
+            }
+        });
+    }
+});
+
+
+
 
 function displayInventoryStatus() {
+    console.log('displayInventoryStatus() function executed')
     scrollToNewMessage();
-    const inventoryMessage = "Here is your store inventory summary :";
 
-    const message = document.createElement('div');
-    message.classList.add('message', 'received');
-    message.innerText = inventoryMessage;  // Add the inventory summary message
-    document.querySelector('.messages').appendChild(message);
-
-}
-
-function displaySalesTrend() {
-    scrollToNewMessage();
 
     let merchantId = localStorage.getItem('merchantID');
-    console.log('MerchantId : ',merchantId);
+    console.log('MerchantId : ', merchantId);
     if (!merchantId) {
         console.error('Merchant ID is not available');
         return;
     }
 
-    const inventoryMessage = "Here is your store sales trend summary:";
-    const message = document.createElement('div');
-    message.classList.add('message', 'received');
-    message.innerText = inventoryMessage;
-    document.querySelector('.messages').appendChild(message);
+    const inventoryMessage = document.createElement('div');
+    inventoryMessage.classList.add('message', 'received');
+    inventoryMessage.style.backgroundColor = '#c1e2be'; // Light green background
+    inventoryMessage.innerHTML = "Here is your store inventory status:";
+    document.querySelector('.messages').appendChild(inventoryMessage);
 
-    // Optional: Add a temporary typing indicator
+    const typingMessage = document.createElement('div');
+    typingMessage.classList.add('message', 'typing');
+    typingMessage.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+    document.querySelector('.messages').appendChild(typingMessage);
+
+    fetch('http://127.0.0.1:5001/inventory_status', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'merchant-id': merchantId
+        }
+    })
+        .then(response => response.json())
+        .then(data => {
+            document.querySelector('.messages').removeChild(typingMessage);
+
+            const responseMessage = document.createElement('div');
+            responseMessage.classList.add('message', 'received', 'backend-message'); // Add 'backend-message' here
+
+            if (data.reply) {
+                responseMessage.innerHTML = `<span class="message-text">${data.reply}</span>`;
+            } else if (data.error) {
+                responseMessage.innerHTML = `<span class="message-text">⚠️ ${data.error}</span>`;
+            } else {
+                responseMessage.innerHTML = `<span class="message-text">Unexpected error occurred.</span>`;
+            }
+
+            document.querySelector('.messages').appendChild(responseMessage);
+            scrollToNewMessage();
+        })
+        .catch(error => {
+            console.error('Error fetching sales trend:', error);
+            document.querySelector('.messages').removeChild(typingMessage);
+
+            const errorMessage = document.createElement('div');
+            errorMessage.classList.add('message', 'received', 'error');
+            errorMessage.innerText = "Sorry, I couldn't fetch the sales trend chart.";
+            document.querySelector('.messages').appendChild(errorMessage);
+            scrollToNewMessage();
+        });
+
+}
+
+function displaySalesTrend() {
+    scrollToNewMessage();
+    console.log("displaySalesTrend() executed")
+
+    let merchantId = localStorage.getItem('merchantID');
+    console.log('MerchantId : ', merchantId);
+    if (!merchantId) {
+        console.error('Merchant ID is not available');
+        return;
+    }
+
+    const inventoryMessage = document.createElement('div');
+    inventoryMessage.classList.add('message', 'received');
+    inventoryMessage.style.backgroundColor = '#c1e2be'; // Light green background
+    inventoryMessage.innerHTML = "Here is your store sales trend summary:";
+    document.querySelector('.messages').appendChild(inventoryMessage);
+
     const typingMessage = document.createElement('div');
     typingMessage.classList.add('message', 'typing');
     typingMessage.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
@@ -405,11 +560,10 @@ function displaySalesTrend() {
             document.querySelector('.messages').removeChild(typingMessage);
 
             const responseMessage = document.createElement('div');
-            responseMessage.classList.add('message', 'received');
+            responseMessage.classList.add('message', 'received', 'backend-message'); // Add 'backend-message' here
+
             responseMessage.innerHTML = `
                 <span class="message-text">${data.reply}</span>
-                <br>
-                <img src="${data.chart_url}" alt="Sales Trend Chart" style="max-width: 100%; border-radius: 12px; margin-top: 8px;">
             `;
             document.querySelector('.messages').appendChild(responseMessage);
             scrollToNewMessage();
@@ -420,54 +574,154 @@ function displaySalesTrend() {
 
             const errorMessage = document.createElement('div');
             errorMessage.classList.add('message', 'received', 'error');
-            errorMessage.innerText = "Sorry, I couldn't fetch the sales trend chart.";
+            errorMessage.innerText = "Sorry, I couldn't fetch the sales trend.";
+            document.querySelector('.messages').appendChild(errorMessage);
+            scrollToNewMessage();
+        });
+}
+
+function displaySalesOpportunity(){
+    scrollToNewMessage();
+    console.log("displaySalesOpportunity() executed")
+    let merchantId = localStorage.getItem('merchantID');
+    console.log('MerchantId : ', merchantId);
+    if (!merchantId) {
+        console.error('Merchant ID is not available');
+        return;
+    }
+
+    const inventoryMessage = document.createElement('div');
+    inventoryMessage.classList.add('message', 'received');
+    inventoryMessage.style.backgroundColor = '#c1e2be'; // Light green background
+    inventoryMessage.innerHTML = "Here is your store Sales Opportunity:";
+    document.querySelector('.messages').appendChild(inventoryMessage);
+
+    // Optional: Add a temporary typing indicator
+    const typingMessage = document.createElement('div');
+    typingMessage.classList.add('message', 'typing');
+    typingMessage.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+    document.querySelector('.messages').appendChild(typingMessage);
+
+    fetch('http://127.0.0.1:5001/sales_opportunity', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'merchant-id': merchantId
+        }
+    })
+        .then(response => response.json())
+        .then(data => {
+            document.querySelector('.messages').removeChild(typingMessage);
+
+            const responseMessage = document.createElement('div');
+            responseMessage.classList.add('message', 'received', 'backend-message'); // Add 'backend-message' here
+
+            responseMessage.innerHTML = `
+                <span class="message-text">${data.reply}</span>
+            `;
+            document.querySelector('.messages').appendChild(responseMessage);
+            scrollToNewMessage();
+        })
+        .catch(error => {
+            console.error('Error fetching sales trend:', error);
+            document.querySelector('.messages').removeChild(typingMessage);
+
+            const errorMessage = document.createElement('div');
+            errorMessage.classList.add('message', 'received', 'error');
+            errorMessage.innerText = "Sorry, I couldn't fetch the sales opportunity.";
             document.querySelector('.messages').appendChild(errorMessage);
             scrollToNewMessage();
         });
 }
 
 
+function displayOperationalBottleneck() {
+    scrollToNewMessage()
+    console.log("displayOperationalBottleneck() executed")
 
+    let merchantId = localStorage.getItem('merchantID');
+    console.log('MerchantId : ', merchantId);
+    if (!merchantId) {
+        console.error('Merchant ID is not available');
+        return;
+    }
 
-function displaySalesOpportunity(){
-    scrollToNewMessage();
-    const inventoryMessage = "Here is your store sales opportunity :";
+    const inventoryMessage = document.createElement('div');
+    inventoryMessage.classList.add('message', 'received');
+    inventoryMessage.style.backgroundColor = '#c1e2be'; // Light green background
+    inventoryMessage.innerHTML = "Here is your store Operational Bottleneck:";
+    document.querySelector('.messages').appendChild(inventoryMessage);
 
-    const message = document.createElement('div');
-    message.classList.add('message', 'received');
-    message.innerText = inventoryMessage;  // Add the inventory summary message
-    document.querySelector('.messages').appendChild(message);
+    // Optional: Add a temporary typing indicator
+    const typingMessage = document.createElement('div');
+    typingMessage.classList.add('message', 'typing');
+    typingMessage.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+    document.querySelector('.messages').appendChild(typingMessage);
+
+    fetch('http://127.0.0.1:5001/operational_bottleneck', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'merchant-id': merchantId
+        }
+    })
+        .then(response => {
+            console.log('Response Status:', response.status);  // Log status code
+            return response.json();
+        })
+        .then(data => {
+            console.log('API Response:', data);  // Log the entire response
+            document.querySelector('.messages').removeChild(typingMessage);
+
+            const responseMessage = document.createElement('div');
+            responseMessage.classList.add('message', 'received', 'backend-message'); // Add 'backend-message' here
+
+            responseMessage.innerHTML = `
+        <span class="message-text">${data.reply || data.error || 'Unexpected error'}</span>
+    `;
+            document.querySelector('.messages').appendChild(responseMessage);
+            scrollToNewMessage();
+        })
+        .catch(error => {
+            console.error('Error fetching operational bottleneck:', error);
+            document.querySelector('.messages').removeChild(typingMessage);
+
+            const errorMessage = document.createElement('div');
+            errorMessage.classList.add('message', 'received', 'error');
+            errorMessage.innerText = "Sorry, I couldn't fetch the operational bottleneck.";
+            document.querySelector('.messages').appendChild(errorMessage);
+            scrollToNewMessage();
+        });
 }
 
+/* for Tailored Advice */
+function generateGetAdviceBtn() {
+    console.log('generateGetAdviceBtn function called');
 
-function displayOperationalBottleneck(){
-    scrollToNewMessage();
-    const inventoryMessage = "Here is your store operational bottleneck :";
+    // Create a container for the button (optional)
+    var buttonContainer = document.createElement('div');
+    buttonContainer.classList.add('btnContainer');  // Optional class for styling
 
-    const message = document.createElement('div');
-    message.classList.add('message', 'received');
-    message.innerText = inventoryMessage;  // Add the inventory summary message
-    document.querySelector('.messages').appendChild(message);
+    // Create the "Get Advice" button
+    const button = document.createElement('button');
+    button.classList.add('get_advice_btn');  // Add class to style the button
+    button.innerHTML = "Get Advice";  // Button text
+
+    // Attach the click event to the button
+    button.onclick = function () {
+        console.log("Get Advice button clicked");
+        get_advice();  // Call the get_advice function when the button is clicked
+    };
+
+    // Append the button to the button container
+    buttonContainer.appendChild(button);
+
+    // Append the button container to a specific place in the DOM (e.g., .messages or .button-container)
+    document.querySelector('.messages').appendChild(buttonContainer);
 }
 
-
-/* Tailored Advice page */
-
-/* format  the message given */
-function formatGenericMessage(rawMessage) {
-    return rawMessage
-        // Bold formatting: **text**
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-
-        // Line breaks for numbered lists: 1. Something
-        .replace(/(\d+\.\s)/g, '<br>$1')
-
-        // Line breaks for dash lists: - Something
-        .replace(/(\n|^)-\s/g, '<br>• ')
-
-        // Extra spacing between double line breaks (paragraphs)
-        .replace(/\n{2,}/g, '<br><br>')
-
-        // Replace single line breaks with <br>
-        .replace(/\n/g, '<br>');
+function get_advice(){
+    console.log("get_advice() executed.")
+    let merchantId = localStorage.getItem('merchantID');
+    sendMessage("I want advice.", null, true)
 }

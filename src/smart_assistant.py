@@ -114,88 +114,107 @@ def generate_sales_insights(merchant_id, transaction_df):
 
 def generate_inventory_insights(merchant_id, transaction_item_df, items_df):
     """Generate comprehensive inventory insights for a specific merchant"""
-    # Get all items from this merchant
-    merchant_items = items_df[items_df['merchant_id'] == merchant_id]
+    try:
+        # Get all items from this merchant
+        merchant_items = items_df[items_df['merchant_id'] == merchant_id]
 
-    if merchant_items.empty:
-        return {"error": "No inventory data available for this merchant"}
+        if merchant_items.empty:
+            return {
+                'inventory_status': 'Inventory status not available.',
+                'error': "No inventory data available for this merchant"
+            }
 
-    # Get item order counts
-    item_orders = transaction_item_df[transaction_item_df['merchant_id'] == merchant_id]
+        # Get item order counts
+        item_orders = transaction_item_df[transaction_item_df['merchant_id'] == merchant_id]
 
-    if item_orders.empty:
+        if item_orders.empty:
+            return {
+                'inventory_status': 'Inventory status not available.',
+                'total_items': len(merchant_items),
+                'active_items': 0,
+                'error': "No transaction data available for inventory analysis"
+            }
+
+        item_counts = item_orders.groupby('item_id').size().reset_index(name='order_count')
+
+        # Merge with item details
+        item_performance = item_counts.merge(merchant_items, on='item_id')
+
+        # If no performance data was calculated, return appropriate status
+        if item_performance.empty:
+            return {
+                'inventory_status': 'Inventory status not available.',
+                'error': "No performance data available for items"
+            }
+
+        # Calculate revenue per item
+        item_performance['revenue'] = item_performance['item_price'] * item_performance['order_count']
+
+        # Calculate profit margins
+        item_performance['estimated_cost'] = item_performance['item_price'] * 0.6  # Assuming 40% margin
+        item_performance['profit'] = item_performance['revenue'] - (item_performance['estimated_cost'] * item_performance['order_count'])
+        item_performance['profit_margin'] = (item_performance['profit'] / item_performance['revenue']) * 100
+
+        # Find various performance metrics
+        top_sellers = item_performance.sort_values('order_count', ascending=False).head(5)
+        slow_movers = item_performance.sort_values('order_count').head(5)
+        profitable_items = item_performance.sort_values('profit', ascending=False).head(5)
+        high_margin_items = item_performance.sort_values('profit_margin', ascending=False).head(5)
+
+        # Item pairings analysis - what items are commonly ordered together
+        order_items = item_orders.groupby('order_id')['item_id'].apply(list).reset_index()
+        item_pairs = {}
+
+        # Process each order to count pairs
+        for _, row in order_items.iterrows():
+            items = row['item_id']
+            if len(items) > 1:
+                for i, item1 in enumerate(items):
+                    for item2 in items[i+1:]:
+                        pair = tuple(sorted([item1, item2]))
+                        if pair in item_pairs:
+                            item_pairs[pair] += 1
+                        else:
+                            item_pairs[pair] = 1
+
+        # Convert to DataFrame
+        common_pairs = None
+        if item_pairs:
+            import pandas as pd
+            pairs_df = pd.DataFrame([
+                {'item1': p[0], 'item2': p[1], 'count': c}
+                for p, c in item_pairs.items()
+            ])
+
+            # Add item names
+            item_names = merchant_items[['item_id', 'item_name']].set_index('item_id')['item_name'].to_dict()
+
+            if not pairs_df.empty:
+                pairs_df['item1_name'] = pairs_df['item1'].map(item_names)
+                pairs_df['item2_name'] = pairs_df['item2'].map(item_names)
+                common_pairs = pairs_df.sort_values('count', ascending=False).head(5)
+
+        # Price point analysis
+        price_distribution = merchant_items['item_price'].describe().to_dict()
+
+        # Return the insights including inventory status
         return {
+            'inventory_status': 'Inventory insights available.',
+            'top_sellers': top_sellers,
+            'slow_movers': slow_movers,
+            'profitable_items': profitable_items,  # Now based on profit, not revenue
+            'high_margin_items': high_margin_items,
+            'item_performance': item_performance,  # Complete dataset with all metrics
+            'common_pairs': common_pairs,
+            'price_distribution': price_distribution,
             'total_items': len(merchant_items),
-            'active_items': 0,
-            'error': "No transaction data available for inventory analysis"
+            'active_items': len(item_performance)
         }
-
-    item_counts = item_orders.groupby('item_id').size().reset_index(name='order_count')
-
-    # Merge with item details
-    item_performance = item_counts.merge(merchant_items, on='item_id')
-
-    # Calculate revenue per item
-    item_performance['revenue'] = item_performance['item_price'] * item_performance['order_count']
-
-    # Calculate profit margins
-    item_performance['estimated_cost'] = item_performance['item_price'] * 0.6  # Assuming 40% margin
-    item_performance['profit'] = item_performance['revenue'] - (item_performance['estimated_cost'] * item_performance['order_count'])
-    item_performance['profit_margin'] = (item_performance['profit'] / item_performance['revenue']) * 100
-
-    # Find various performance metrics
-    top_sellers = item_performance.sort_values('order_count', ascending=False).head(5)
-    slow_movers = item_performance.sort_values('order_count').head(5)
-    profitable_items = item_performance.sort_values('profit', ascending=False).head(5)
-    high_margin_items = item_performance.sort_values('profit_margin', ascending=False).head(5)
-
-    # Item pairings analysis - what items are commonly ordered together
-    order_items = item_orders.groupby('order_id')['item_id'].apply(list).reset_index()
-    item_pairs = {}
-
-    # Process each order to count pairs
-    for _, row in order_items.iterrows():
-        items = row['item_id']
-        if len(items) > 1:
-            for i, item1 in enumerate(items):
-                for item2 in items[i+1:]:
-                    pair = tuple(sorted([item1, item2]))
-                    if pair in item_pairs:
-                        item_pairs[pair] += 1
-                    else:
-                        item_pairs[pair] = 1
-
-    # Convert to DataFrame
-    common_pairs = None
-    if item_pairs:
-        import pandas as pd
-        pairs_df = pd.DataFrame([
-            {'item1': p[0], 'item2': p[1], 'count': c}
-            for p, c in item_pairs.items()
-        ])
-
-        # Add item names
-        item_names = merchant_items[['item_id', 'item_name']].set_index('item_id')['item_name'].to_dict()
-
-        if not pairs_df.empty:
-            pairs_df['item1_name'] = pairs_df['item1'].map(item_names)
-            pairs_df['item2_name'] = pairs_df['item2'].map(item_names)
-            common_pairs = pairs_df.sort_values('count', ascending=False).head(5)
-
-    # Price point analysis
-    price_distribution = merchant_items['item_price'].describe().to_dict()
-
-    return {
-        'top_sellers': top_sellers,
-        'slow_movers': slow_movers,
-        'profitable_items': profitable_items,  # Now based on profit, not revenue
-        'high_margin_items': high_margin_items,
-        'item_performance': item_performance,  # Complete dataset with all metrics
-        'common_pairs': common_pairs,
-        'price_distribution': price_distribution,
-        'total_items': len(merchant_items),
-        'active_items': len(item_performance)
-    }
+    except Exception as e:
+        return {
+            'inventory_status': 'Inventory status not available.',
+            'error': f"An error occurred while generating inventory insights: {str(e)}"
+        }
 
 
 def generate_customer_insights(merchant_id, transaction_df):
@@ -747,6 +766,258 @@ def generate_location_insights(merchant_id, merchant_df, transaction_df, items_d
         }
     }
 
+def generate_keyword_insights(merchant_id, transaction_item_df, items_df, keyword_df):
+    """Generate insights about search keywords related to the merchant's menu items"""
+    # Get merchant's items
+    merchant_items = items_df[items_df['merchant_id'] == merchant_id]
+
+    if merchant_items.empty:
+        return {"error": "No menu items found for this merchant"}
+
+    # Extract item names and split into individual words
+    item_words = set()
+    for name in merchant_items['item_name']:
+        # Split the item name into words
+        words = name.lower().split()
+        # Add each word to the set
+        for word in words:
+            # Clean the word (remove punctuation)
+            word = ''.join(e for e in word if e.isalnum())
+            if len(word) > 2:  # Only include words with 3+ characters
+                item_words.add(word)
+
+    # Filter keywords that are relevant to this merchant
+    relevant_keywords = []
+    for _, row in keyword_df.iterrows():
+        keyword = str(row['keyword']).lower()
+        # Check if any word in the keyword matches merchant's items
+        keyword_words = keyword.split()
+
+        # If any word in the keyword matches a word in the merchant's items, it's relevant
+        if any(word in item_words for word in keyword_words):
+            relevant_keywords.append(row)
+
+    # If we have enough relevant keywords, create a DataFrame
+    if relevant_keywords:
+        relevant_df = pd.DataFrame(relevant_keywords)
+    else:
+        # Use fuzzy matching as a fallback
+        from fuzzywuzzy import process
+
+        # Get all item names as a list
+        item_names = merchant_items['item_name'].tolist()
+
+        # Find closest matches for each keyword
+        relevant_keywords = []
+        for _, row in keyword_df.iterrows():
+            keyword = str(row['keyword']).lower()
+
+            # Find the closest matching item name
+            matches = process.extractOne(keyword, item_names)
+            if matches and matches[1] > 70:  # 70% similarity threshold
+                relevant_keywords.append(row)
+
+        if relevant_keywords:
+            relevant_df = pd.DataFrame(relevant_keywords)
+        else:
+            return {
+                "error": "No relevant keywords found for this merchant's menu items",
+                "suggestion": "Consider adding more descriptive item names to match common search terms"
+            }
+
+    # Calculate conversion metrics
+    relevant_df['view_to_menu_rate'] = relevant_df['menu'] / relevant_df['view'] * 100
+    relevant_df['menu_to_checkout_rate'] = relevant_df['checkout'] / relevant_df['menu'] * 100
+    relevant_df['checkout_to_order_rate'] = relevant_df['order'] / relevant_df['checkout'] * 100
+    relevant_df['overall_conversion'] = relevant_df['order'] / relevant_df['view'] * 100
+
+    # Add a search popularity score (normalized)
+    max_views = keyword_df['view'].max()
+    relevant_df['popularity_score'] = (relevant_df['view'] / max_views * 100).round(1)
+
+    # Sort by different metrics for different insights
+    top_searched = relevant_df.sort_values('view', ascending=False).head(10)
+    best_converting = relevant_df.sort_values('overall_conversion', ascending=False).head(10)
+    high_abandonment = relevant_df[relevant_df['view'] > 100].sort_values('overall_conversion').head(10)
+
+    # Use machine learning to cluster keywords if we have enough data
+    clusters = None
+    if len(relevant_df) >= 20:
+        try:
+            from sklearn.cluster import KMeans
+            from sklearn.preprocessing import StandardScaler
+
+            # Select features for clustering
+            features = ['view', 'view_to_menu_rate', 'menu_to_checkout_rate', 'checkout_to_order_rate']
+            X = relevant_df[features].fillna(0)
+
+            # Standardize features
+            scaler = StandardScaler()
+            X_scaled = scaler.fit_transform(X)
+
+            # Determine optimal number of clusters (up to 5)
+            from sklearn.metrics import silhouette_score
+            best_score = -1
+            best_n = 2
+
+            for n in range(2, min(6, len(relevant_df) // 5 + 1)):
+                kmeans = KMeans(n_clusters=n, random_state=42)
+                labels = kmeans.fit_predict(X_scaled)
+
+                if len(set(labels)) > 1:  # Ensure we have more than one cluster
+                    score = silhouette_score(X_scaled, labels)
+                    if score > best_score:
+                        best_score = score
+                        best_n = n
+
+            # Perform clustering with optimal number of clusters
+            kmeans = KMeans(n_clusters=best_n, random_state=42)
+            relevant_df['cluster'] = kmeans.fit_predict(X_scaled)
+
+            # Get cluster centers and interpret them
+            centers = scaler.inverse_transform(kmeans.cluster_centers_)
+
+            clusters = []
+            for i in range(best_n):
+                cluster_df = relevant_df[relevant_df['cluster'] == i].copy()
+
+                # Determine cluster characteristics
+                avg_view = centers[i][0]
+                avg_v2m = centers[i][1]
+                avg_m2c = centers[i][2]
+                avg_c2o = centers[i][3]
+
+                # Name the cluster based on characteristics
+                if avg_v2m > 50 and avg_m2c > 30 and avg_c2o > 70:
+                    cluster_type = "High-Converting Keywords"
+                elif avg_view > relevant_df['view'].mean() * 2:
+                    cluster_type = "Popular Search Terms"
+                elif avg_v2m < 20 or avg_m2c < 10 or avg_c2o < 30:
+                    cluster_type = "Poor-Converting Keywords"
+                else:
+                    cluster_type = f"Keyword Group {i+1}"
+
+                # Get top keywords in this cluster
+                top_cluster_keywords = cluster_df.sort_values('view', ascending=False).head(5)
+
+                clusters.append({
+                    "type": cluster_type,
+                    "keywords": top_cluster_keywords['keyword'].tolist(),
+                    "avg_views": avg_view,
+                    "avg_view_to_menu": avg_v2m,
+                    "avg_menu_to_checkout": avg_m2c,
+                    "avg_checkout_to_order": avg_c2o,
+                    "count": len(cluster_df)
+                })
+
+        except Exception as e:
+            # If clustering fails, just note the error but continue
+            clusters = {"error": f"Could not perform clustering: {str(e)}"}
+
+    # Opportunities and recommendations
+    opportunities = []
+    recommendations = []
+
+    # Find keywords with high views but low conversion
+    high_potential = relevant_df[(relevant_df['view'] > relevant_df['view'].median()) &
+                                 (relevant_df['overall_conversion'] < relevant_df['overall_conversion'].median())]
+
+    if not high_potential.empty:
+        opportunities.append(f"Keywords with high search volume but low conversion: {', '.join(high_potential['keyword'].head(3))}")
+        recommendations.append("Optimize menu items or descriptions to better match these popular search terms")
+
+    # Find popular keywords not well-represented in the menu
+    all_item_text = ' '.join(merchant_items['item_name']).lower()
+    poorly_represented = []
+
+    for _, row in top_searched.head(5).iterrows():
+        keyword = str(row['keyword']).lower()
+        if keyword not in all_item_text and row['view'] > 100:
+            poorly_represented.append(keyword)
+
+    if poorly_represented:
+        opportunities.append(f"Popular search terms not prominently featured in your menu: {', '.join(poorly_represented)}")
+        recommendations.append("Consider adding menu items or updating descriptions to feature these popular search terms")
+
+    # Find high-converting but low-volume keywords
+    hidden_gems = relevant_df[(relevant_df['overall_conversion'] > relevant_df['overall_conversion'].quantile(0.75)) &
+                              (relevant_df['view'] < relevant_df['view'].median())]
+
+    if not hidden_gems.empty:
+        opportunities.append(f"Keywords with high conversion but low search volume: {', '.join(hidden_gems['keyword'].head(3))}")
+        recommendations.append("Consider promoting these high-converting items more prominently")
+
+    # Identify seasonal or trending keywords
+    # In a real system, we'd have timestamp data to identify trends
+    # Here we'll just use a proxy (high conversion + high views) to simulate "trending" items
+    trending = relevant_df[(relevant_df['view'] > relevant_df['view'].quantile(0.75)) &
+                           (relevant_df['overall_conversion'] > relevant_df['overall_conversion'].quantile(0.6))]
+
+    trending_keywords = []
+    if not trending.empty:
+        trending_keywords = trending['keyword'].head(5).tolist()
+        opportunities.append(f"Trending search terms with good conversion: {', '.join(trending_keywords)}")
+        recommendations.append("Feature these trending items prominently in promotions and front page")
+
+    return {
+        "relevant_keywords_count": len(relevant_df),
+        "top_searched_keywords": top_searched.to_dict(orient='records'),
+        "best_converting_keywords": best_converting.to_dict(orient='records'),
+        "high_abandonment_keywords": high_abandonment.to_dict(orient='records'),
+        "keyword_clusters": clusters,
+        "opportunities": opportunities,
+        "recommendations": recommendations,
+        "trending_keywords": trending_keywords
+    }
+
+def generate_bottleneck(merchant_id, transaction_df, inventory_insights, sales_insights, benchmark_insights):
+    """Identify operational bottlenecks from wait time, inventory, and sales patterns"""
+    merchant_txns = transaction_df[transaction_df['merchant_id'] == merchant_id]
+    bottlenecks = []
+
+    # --- Wait Time Analysis ---
+    if not merchant_txns.empty and 'wait_time' in merchant_txns.columns:
+        wait_time_stats = merchant_txns['wait_time'].describe().to_dict()
+        avg_wait = wait_time_stats.get('mean', None)
+        max_wait = wait_time_stats.get('max', None)
+
+        if avg_wait and avg_wait > 25:
+            bottlenecks.append(f"High average wait time ({avg_wait:.1f} min) — possible kitchen or delivery delays.")
+        if max_wait and max_wait > 60:
+            bottlenecks.append(f"Long peak wait times reaching {max_wait:.1f} min — check capacity during rush hours.")
+
+        # Benchmark comparison
+        if 'metrics_detail' in benchmark_insights and 'wait_time' in benchmark_insights['metrics_detail']:
+            peer_diff = benchmark_insights['metrics_detail']['wait_time']['difference_pct']
+            if peer_diff > 10:
+                bottlenecks.append(f"Wait time is {peer_diff:.1f}% longer than peers — operational speed may be below standard.")
+    else:
+        wait_time_stats = {"note": "Wait time data not available"}
+
+    # --- Slow Moving Items ---
+    if 'slow_movers' in inventory_insights and not inventory_insights['slow_movers'].empty:
+        slow_items = inventory_insights['slow_movers'].head(3)
+        for _, item in slow_items.iterrows():
+            bottlenecks.append(f"Slow-moving item: {item['item_name']} with only {item['order_count']} orders.")
+
+    # --- Low-performing Hours ---
+    if 'hourly_trends' in sales_insights and not sales_insights['hourly_trends'].empty:
+        low_hours = sales_insights['hourly_trends'].nsmallest(3, 'order_count')
+        for _, hour in low_hours.iterrows():
+            bottlenecks.append(f"Low order volume at {int(hour['hour_of_day'])}:00 — consider promotions or review staffing.")
+
+    # --- Low-performing Days ---
+    if 'daily_trends' in sales_insights and not sales_insights['daily_trends'].empty:
+        low_days = sales_insights['daily_trends'].nsmallest(2, 'total_sales')
+        for _, day in low_days.iterrows():
+            bottlenecks.append(f"{day['day_of_week']} has low sales (RM{day['total_sales']:.2f}) — explore discounts or campaigns.")
+
+    return {
+        "wait_time_stats": wait_time_stats,
+        "bottlenecks": bottlenecks if bottlenecks else ["No major bottlenecks detected from current insights."]
+    }
+
+
 from together import Together
 
 class LLMResponder:
@@ -771,12 +1042,13 @@ class LLMResponder:
             return f"Sorry, I couldn't generate a response due to an error: {e}"
 
 class SmartMerchantAssistant:
-    def __init__(self, merchant_id, merchant_df, items_df, transaction_df, transaction_item_df):
+    def __init__(self, merchant_id, merchant_df, items_df, transaction_df, transaction_item_df, keyword_df=None):
         self.merchant_id = merchant_id
         self.merchant_df = merchant_df
         self.items_df = items_df
         self.transaction_df = transaction_df
         self.transaction_item_df = transaction_item_df
+        self.keyword_df = keyword_df
 
         import os
         api_key = os.environ.get("TOGETHER_API_KEY", "e9d4a2f1ab1492bab4ab7525746160deb428cbf743c7528ec6b6392fcdc2b593")
@@ -788,6 +1060,10 @@ class SmartMerchantAssistant:
         self.customer_insights = generate_customer_insights(merchant_id, transaction_df)
         self.benchmark_insights = generate_benchmark_insights(merchant_id, merchant_df, transaction_df, items_df)
         self.location_insights = generate_location_insights(merchant_id, merchant_df, transaction_df, items_df, transaction_item_df)
+        self.keyword_insights = None
+        if keyword_df is not None:
+            self.keyword_insights = generate_keyword_insights(merchant_id, transaction_item_df, items_df, keyword_df)
+        self.bottleneck_insights = generate_bottleneck(merchant_id,transaction_df,self.inventory_insights,self.sales_insights,self.benchmark_insights)
 
     def get_context_summary(self):
         """Summarize key business data to include in prompt"""
@@ -916,8 +1192,45 @@ class SmartMerchantAssistant:
                 if 'strengths' in self.location_insights and self.location_insights['strengths']:
                     context.append(f"Location-based strengths: {self.location_insights['strengths']}")
 
+                # 🔍 Keyword Insights
+                if self.keyword_insights:
+                    if 'error' in self.keyword_insights:
+                        context.append(f"Keyword Insights Error: {self.keyword_insights['error']}")
+                    else:
+                        context.append(f"Number of relevant keywords: {self.keyword_insights['relevant_keywords_count']}")
 
+                        if 'top_searched_keywords' in self.keyword_insights and self.keyword_insights['top_searched_keywords']:
+                            top_keywords = [k['keyword'] for k in self.keyword_insights['top_searched_keywords'][:3]]
+                            context.append(f"Most searched keywords: {', '.join(top_keywords)}")
 
+                        if 'best_converting_keywords' in self.keyword_insights and self.keyword_insights['best_converting_keywords']:
+                            best_keywords = [k['keyword'] for k in self.keyword_insights['best_converting_keywords'][:3]]
+                            context.append(f"Best converting keywords: {', '.join(best_keywords)}")
+
+                        if 'high_abandonment_keywords' in self.keyword_insights and self.keyword_insights['high_abandonment_keywords']:
+                            abandoned_keywords = [k['keyword'] for k in self.keyword_insights['high_abandonment_keywords'][:3]]
+                            context.append(f"Keywords with high abandonment: {', '.join(abandoned_keywords)}")
+
+                        if 'keyword_clusters' in self.keyword_insights and self.keyword_insights['keyword_clusters']:
+                            clusters = self.keyword_insights['keyword_clusters']
+                            if isinstance(clusters, list):
+                                for cluster in clusters[:2]:  # Just include first 2 clusters
+                                    context.append(f"Keyword group - {cluster['type']}: {', '.join(cluster['keywords'][:3])}")
+
+                        if 'trending_keywords' in self.keyword_insights and self.keyword_insights['trending_keywords']:
+                            context.append(f"Trending keywords: {', '.join(self.keyword_insights['trending_keywords'][:5])}")
+
+                        if 'opportunities' in self.keyword_insights and self.keyword_insights['opportunities']:
+                            context.append(f"Keyword opportunities: {self.keyword_insights['opportunities']}")
+
+                        if 'recommendations' in self.keyword_insights and self.keyword_insights['recommendations']:
+                            context.append(f"Keyword recommendations: {self.keyword_insights['recommendations']}")
+
+                    # ⚠️ Bottlenecks
+                    context.append("\n🔍 Operational Bottlenecks:")
+                    if 'bottlenecks' in self.bottleneck_insights:
+                        for issue in self.bottleneck_insights['bottlenecks']:
+                            context.append(f"- {issue}")
 
             return "\n".join(context)
         except Exception as e:

@@ -29,15 +29,15 @@
   const defaultMessage = "Hi there! I'm GrabBot, your Grab merchant assistant.";
 
   window.onload = function() {
+    // Send the default message when the page loads
     sendMessage(defaultMessage, true);
+    generateGetAdviceBtn();
   };
 
-  window.onload = function() {
-    console.log('Page loaded');
-    generateFAQButtons();
-  };
 
 </script>
+<div class="adviceBtn"></div>
+
 
 <div class="chatbox">
   <div class="messages">
