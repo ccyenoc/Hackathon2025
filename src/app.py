@@ -6,18 +6,23 @@ from smart_assistant import SmartMerchantAssistant, generate_sales_insights
 from together import Together
 from multiprocessing import Process
 import logging
+import gzip
+
+def read_gzip_csv(file_path):
+    with gzip.open(file_path, "rt") as f:
+        return pd.read_csv(f)
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
-merchant_df = pd.read_csv('merchant.csv')
-items_df = pd.read_csv('items.csv')
-transaction_df = pd.read_csv('transaction_data.csv')
-transaction_item_df = pd.read_csv('transaction_items.csv')
-keyword_df = pd.read_csv('keywords.csv')
-
+merchant_df = read_gzip_csv('merchant.csv.gz')
+items_df = read_gzip_csv('items.csv.gz')
+transaction_df = read_gzip_csv('transaction_data.csv.gz')
+transaction_item_df = read_gzip_csv('transaction_items.csv.gz')
+keyword_df = read_gzip_csv('keywords.csv.gz')
 
 
 # === PROCESS DATA ===
